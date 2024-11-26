@@ -74,28 +74,34 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				return
 
 			case claim := <-claims.Channel():
+				log.Printf("NewRPCClient claim 1")
 				c.mu.RLock()
 				claimChan, ok := c.claimRequests[claim.RequestId]
 				c.mu.RUnlock()
 				if ok {
 					claimChan <- claim
 				}
+				log.Printf("NewRPCClient claim 2")
 
 			case res := <-responses.Channel():
+				log.Printf("NewRPCClient responses 1")
 				c.mu.RLock()
 				resChan, ok := c.responseChannels[res.RequestId]
 				c.mu.RUnlock()
 				if ok {
 					resChan <- res
 				}
+				log.Printf("NewRPCClient responses 2")
 
 			case msg := <-streams.Channel():
+				log.Printf("NewRPCClient streams 1")
 				c.mu.RLock()
 				streamChan, ok := c.streamChannels[msg.StreamId]
 				c.mu.RUnlock()
 				if ok {
 					streamChan <- msg
 				}
+				log.Printf("NewRPCClient streams 2")
 
 			}
 		}
