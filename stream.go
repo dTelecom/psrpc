@@ -47,7 +47,9 @@ func (s *clientStream) send(ctx context.Context, msg *internal.Stream) (err erro
 }
 
 func (s *clientStream) close(streamID string) {
+	log.Printf("runClientStream clientStream close")
 	s.c.mu.Lock()
+	log.Printf("runClientStream clientStream delete")
 	delete(s.c.streamChannels, streamID)
 	s.c.mu.Unlock()
 }
