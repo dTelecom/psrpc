@@ -514,7 +514,9 @@ func runClientStream[SendType, RecvType proto.Message](
 			return
 
 		case is := <-recvChan:
+			log.Printf("runClientStream recvChan 1")
 			if time.Now().UnixNano() < is.Expiry {
+				log.Printf("runClientStream recvChan 2")
 				if err := s.handleStream(is); err != nil {
 					logger.Error(err, "failed to handle request", "requestID", is.RequestId)
 				}
