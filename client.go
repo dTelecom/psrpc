@@ -99,13 +99,14 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				streamChan, ok := c.streamChannels[msg.StreamId]
 				c.mu.RUnlock()
 				if ok {
-					log.Printf("NewRPCClient streams 2 %v", msg.StreamId)
-				    select {
-				    case streamChan <- msg:
-				    default:
-						log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
-				    	logger.Error(ErrSlowConsumer, "failed to publish message", "streamID", msg.StreamId)
-				    }
+					streamChan <- msg
+					// log.Printf("NewRPCClient streams 2 %v", msg.StreamId)
+				    // select {
+				    // case streamChan <- msg:
+				    // default:
+					// 	log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
+				    // 	logger.Error(ErrSlowConsumer, "failed to publish message", "streamID", msg.StreamId)
+				    // }
 				}
 				log.Printf("NewRPCClient streams 4 %v", msg.StreamId)
 
