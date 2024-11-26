@@ -87,6 +87,7 @@ func (h *streamInterceptorRoot[SendType, RecvType]) Send(msg proto.Message, opts
 }
 
 func (h *streamInterceptorRoot[SendType, RecvType]) Close(cause error) error {
+	log.Printf("runClientStream streamInterceptorRoot close")
 	return h.close(cause)
 }
 
@@ -325,6 +326,7 @@ func (s *streamImpl[SendType, RecvType]) Err() error {
 }
 
 func (s *streamImpl[RequestType, ResponseType]) Close(cause error) error {
+	log.Printf("runClientStream interceptor close")
 	return s.interceptor.Close(cause)
 }
 
