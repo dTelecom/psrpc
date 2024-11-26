@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync"
 	"time"
-	"log"
 
 	"google.golang.org/protobuf/proto"
 
@@ -74,42 +73,32 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				return
 
 			case claim := <-claims.Channel():
-				log.Printf("NewRPCClient claim 1")
 				c.mu.RLock()
 				claimChan, ok := c.claimRequests[claim.RequestId]
 				c.mu.RUnlock()
 				if ok {
 					claimChan <- claim
 				}
-				log.Printf("NewRPCClient claim 2")
 
 			case res := <-responses.Channel():
-				log.Printf("NewRPCClient responses 1")
 				c.mu.RLock()
 				resChan, ok := c.responseChannels[res.RequestId]
 				c.mu.RUnlock()
 				if ok {
 					resChan <- res
 				}
-				log.Printf("NewRPCClient responses 2")
 
 			case msg := <-streams.Channel():
-				log.Printf("NewRPCClient streams 1 %v", msg.StreamId)
-				log.Printf("NewRPCClient streams  %v", len(c.streamChannels))
 				c.mu.RLock()
 				streamChan, ok := c.streamChannels[msg.StreamId]
 				c.mu.RUnlock()
 				if ok {
-					log.Printf("NewRPCClient streams 2 %v", msg.StreamId)
 				    select {
 				    case streamChan <- msg:
 				    default:
-						log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
 				    	logger.Error(ErrSlowConsumer, "failed to publish message", "streamID", msg.StreamId)
 				    }
 				}
-				log.Printf("NewRPCClient streams 4 %v", msg.StreamId)
-
 			}
 		}
 	}()
@@ -136,8 +125,6 @@ type RPCClient struct {
 }
 
 func (c *RPCClient) Close() {
-	log.Printf("RPCClient close")
-
 	select {
 	case <-c.closed:
 	default:
@@ -402,8 +389,6 @@ func OpenStream[SendType, RecvType proto.Message](
 	opts ...RequestOption,
 ) (ClientStream[SendType, RecvType], error) {
 
-	log.Printf("OpenStream progress 1")
-
 	o := getRequestOpts(c.clientOpts, opts...)
 	info := RPCInfo{
 		Service: c.serviceName,
@@ -427,8 +412,6 @@ func OpenStream[SendType, RecvType proto.Message](
 		},
 	}
 
-	log.Printf("OpenStream progress 2")
-
 	claimChan := make(chan *internal.ClaimRequest, c.channelSize)
 	recvChan := make(chan *internal.Stream, c.channelSize)
 
@@ -436,8 +419,6 @@ func OpenStream[SendType, RecvType proto.Message](
 	c.claimRequests[requestID] = claimChan
 	c.streamChannels[streamID] = recvChan
 	c.mu.Unlock()
-
-	log.Printf("OpenStream progress 3")
 
 	defer func() {
 		c.mu.Lock()
@@ -448,13 +429,9 @@ func OpenStream[SendType, RecvType proto.Message](
 	octx, cancel := context.WithTimeout(ctx, o.timeout)
 	defer cancel()
 
-	log.Printf("OpenStream progress 4")
-
 	if err := c.bus.Publish(octx, getStreamServerChannel(c.serviceName, rpc, topic), req); err != nil {
 		return nil, NewError(Internal, err)
 	}
-
-	log.Printf("OpenStream progress 5")
 
 	if requireClaim {
 		serverID, err := selectServer(octx, claimChan, nil, o.selectionOpts)
@@ -468,8 +445,6 @@ func OpenStream[SendType, RecvType proto.Message](
 			return nil, NewError(Internal, err)
 		}
 	}
-
-	log.Printf("OpenStream progress 6")
 
 	ackChan := make(chan struct{})
 
@@ -487,8 +462,6 @@ func OpenStream[SendType, RecvType proto.Message](
 	}
 	stream.ctx, stream.cancelCtx = context.WithCancel(ctx)
 	stream.interceptor = chainClientInterceptors[StreamInterceptor](c.streamInterceptors, info, &streamInterceptorRoot[SendType, RecvType]{stream})
-
-	log.Printf("OpenStream progress 7")
 
 	go runClientStream(c, stream, recvChan)
 
@@ -513,23 +486,18 @@ func runClientStream[SendType, RecvType proto.Message](
 	s *streamImpl[SendType, RecvType],
 	recvChan chan *internal.Stream,
 ) {
-	log.Printf("runClientStream start")
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Printf("runClientStream ctx done %v %v", s.ctx.Err(), s.streamID)
 			_ = s.Close(s.ctx.Err())
 			return
 
 		case <-c.closed:
-			log.Printf("runClientStream closed")
 			_ = s.Close(nil)
 			return
 
 		case is := <-recvChan:
-			log.Printf("runClientStream recvChan 1")
 			if time.Now().UnixNano() < is.Expiry {
-				log.Printf("runClientStream recvChan 2")
 				if err := s.handleStream(is); err != nil {
 					logger.Error(err, "failed to handle request", "requestID", is.RequestId)
 				}
