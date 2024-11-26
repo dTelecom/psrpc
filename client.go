@@ -123,6 +123,8 @@ type RPCClient struct {
 }
 
 func (c *RPCClient) Close() {
+	log.Printf("RPCClient close")
+
 	select {
 	case <-c.closed:
 	default:
@@ -502,7 +504,7 @@ func runClientStream[SendType, RecvType proto.Message](
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Printf("runClientStream ctx done")
+			log.Printf("runClientStream ctx done %v", s.ctx.Err())
 			_ = s.Close(s.ctx.Err())
 			return
 
