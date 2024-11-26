@@ -103,10 +103,11 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				    select {
 				    case streamChan <- msg:
 				    default:
-				    	logger.Error(err, "failed to publish message", "streamID", msg.StreamId)
+						log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
+				    	logger.Error(ErrSlowConsumer, "failed to publish message", "streamID", msg.StreamId)
 				    }
 				}
-				log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
+				log.Printf("NewRPCClient streams 4 %v", msg.StreamId)
 
 			}
 		}
