@@ -94,14 +94,15 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				log.Printf("NewRPCClient responses 2")
 
 			case msg := <-streams.Channel():
-				log.Printf("NewRPCClient streams 1")
+				log.Printf("NewRPCClient streams 1 %v", msg.StreamId)
 				c.mu.RLock()
 				streamChan, ok := c.streamChannels[msg.StreamId]
 				c.mu.RUnlock()
 				if ok {
+					log.Printf("NewRPCClient streams 2 %v", msg.StreamId)
 					streamChan <- msg
 				}
-				log.Printf("NewRPCClient streams 2")
+				log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
 
 			}
 		}
@@ -510,7 +511,7 @@ func runClientStream[SendType, RecvType proto.Message](
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Printf("runClientStream ctx done %v", s.ctx.Err())
+			log.Printf("runClientStream ctx done %v %v", s.ctx.Err(), s.streamID)
 			_ = s.Close(s.ctx.Err())
 			return
 
