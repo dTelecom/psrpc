@@ -386,6 +386,8 @@ func OpenStream[SendType, RecvType proto.Message](
 	opts ...RequestOption,
 ) (ClientStream[SendType, RecvType], error) {
 
+	log.Printf("OpenStream progress 1")
+
 	o := getRequestOpts(c.clientOpts, opts...)
 	info := RPCInfo{
 		Service: c.serviceName,
@@ -409,6 +411,8 @@ func OpenStream[SendType, RecvType proto.Message](
 		},
 	}
 
+	log.Printf("OpenStream progress 2")
+
 	claimChan := make(chan *internal.ClaimRequest, c.channelSize)
 	recvChan := make(chan *internal.Stream, c.channelSize)
 
@@ -416,6 +420,8 @@ func OpenStream[SendType, RecvType proto.Message](
 	c.claimRequests[requestID] = claimChan
 	c.streamChannels[streamID] = recvChan
 	c.mu.Unlock()
+
+	log.Printf("OpenStream progress 3")
 
 	defer func() {
 		c.mu.Lock()
@@ -426,9 +432,13 @@ func OpenStream[SendType, RecvType proto.Message](
 	octx, cancel := context.WithTimeout(ctx, o.timeout)
 	defer cancel()
 
+	log.Printf("OpenStream progress 4")
+
 	if err := c.bus.Publish(octx, getStreamServerChannel(c.serviceName, rpc, topic), req); err != nil {
 		return nil, NewError(Internal, err)
 	}
+
+	log.Printf("OpenStream progress 5")
 
 	if requireClaim {
 		serverID, err := selectServer(octx, claimChan, nil, o.selectionOpts)
@@ -442,6 +452,8 @@ func OpenStream[SendType, RecvType proto.Message](
 			return nil, NewError(Internal, err)
 		}
 	}
+
+	log.Printf("OpenStream progress 6")
 
 	ackChan := make(chan struct{})
 
@@ -459,6 +471,8 @@ func OpenStream[SendType, RecvType proto.Message](
 	}
 	stream.ctx, stream.cancelCtx = context.WithCancel(ctx)
 	stream.interceptor = chainClientInterceptors[StreamInterceptor](c.streamInterceptors, info, &streamInterceptorRoot[SendType, RecvType]{stream})
+
+	log.Printf("OpenStream progress 7")
 
 	go runClientStream(c, stream, recvChan)
 
