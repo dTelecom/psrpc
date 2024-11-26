@@ -498,13 +498,16 @@ func runClientStream[SendType, RecvType proto.Message](
 	s *streamImpl[SendType, RecvType],
 	recvChan chan *internal.Stream,
 ) {
+	log.Printf("runClientStream start")
 	for {
 		select {
 		case <-s.ctx.Done():
+			log.Printf("runClientStream ctx done")
 			_ = s.Close(s.ctx.Err())
 			return
 
 		case <-c.closed:
+			log.Printf("runClientStream closed")
 			_ = s.Close(nil)
 			return
 
