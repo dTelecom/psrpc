@@ -149,6 +149,7 @@ func (s *streamImpl[SendType, RecvType]) handleStream(is *internal.Stream) error
 			s.err = newErrorFromResponse(b.Close.Code, b.Close.Error)
 			s.mu.Unlock()
 
+			log.Printf("runClientStream clientStream Stream_Close")
 			s.adapter.close(s.streamID)
 			s.cancelCtx()
 			close(s.recvChan)
@@ -186,9 +187,14 @@ func (s *streamImpl[SendType, RecvType]) ack(ctx context.Context, is *internal.S
 }
 
 func (s *streamImpl[RequestType, ResponseType]) close(cause error) error {
+
+	log.Printf("runClientStream clientStream close 1")
+
 	if s.closed.Swap(true) {
 		return ErrStreamClosed
 	}
+
+	log.Printf("runClientStream clientStream close 2")
 
 	if cause == nil {
 		cause = ErrStreamClosed
@@ -197,6 +203,8 @@ func (s *streamImpl[RequestType, ResponseType]) close(cause error) error {
 	s.mu.Lock()
 	s.err = cause
 	s.mu.Unlock()
+
+	log.Printf("runClientStream clientStream close 3")
 
 	msg := &internal.StreamClose{}
 	var e Error
@@ -207,6 +215,7 @@ func (s *streamImpl[RequestType, ResponseType]) close(cause error) error {
 		msg.Error = cause.Error()
 		msg.Code = string(Unknown)
 	}
+	log.Printf("runClientStream clientStream close 4")
 
 	now := time.Now()
 	err := s.adapter.send(context.Background(), &internal.Stream{
@@ -218,8 +227,12 @@ func (s *streamImpl[RequestType, ResponseType]) close(cause error) error {
 			Close: msg,
 		},
 	})
+	log.Printf("runClientStream clientStream close 5")
 
 	s.waitForPending()
+
+	log.Printf("runClientStream clientStream close 6")
+
 	s.adapter.close(s.streamID)
 	s.cancelCtx()
 	close(s.recvChan)
