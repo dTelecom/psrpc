@@ -100,7 +100,11 @@ func NewRPCClient(serviceName, clientID string, bus MessageBus, opts ...ClientOp
 				c.mu.RUnlock()
 				if ok {
 					log.Printf("NewRPCClient streams 2 %v", msg.StreamId)
-					streamChan <- msg
+				    select {
+				    case streamChan <- msg:
+				    default:
+				    	logger.Error(err, "failed to publish message", "streamID", msg.StreamId)
+				    }
 				}
 				log.Printf("NewRPCClient streams 3 %v", msg.StreamId)
 
